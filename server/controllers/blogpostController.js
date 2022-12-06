@@ -1,3 +1,4 @@
+const { param, query, validationResult } = require("express-validator");
 const Blogpost = require("../models/blogpost");
 const User = require("../models/user");
 
@@ -6,6 +7,10 @@ const User = require("../models/user");
  */
 
 exports.blogposts_get_list = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors });
+  }
   let { limit = 10, page = 1, q } = req.query;
 
   const limitRecords = parseInt(limit);
@@ -26,7 +31,7 @@ exports.blogposts_get_list = async (req, res) => {
 /**
  * GET Single BLOGPOST
  */
-exports.blogpost_get = async (req, res) => {
+exports.blogpost_get_single = async (req, res) => {
   try {
     const blogpostFound = await Blogpost.findById(req.params.id);
     res.json(blogpostFound);

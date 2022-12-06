@@ -26,7 +26,6 @@ const blogpostSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
 });
 
 blogpostSchema.index({ "$**": "text" });
