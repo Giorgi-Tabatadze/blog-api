@@ -36,13 +36,17 @@ exports.comment_post_insert = async (req, res) => {
         .status(400)
         .json({ message: "Invalid Blogpost ID provided in Parameters" });
     } else {
-      const newComment = new Comment({
-        authorName: req.body.authorName,
-        text: req.body.text,
-        blogPost: req.params.id,
-      });
-      const insertedComment = await newComment.save();
-      res.json(insertedComment);
+      try {
+        const newComment = new Comment({
+          authorName: req.body.authorName,
+          text: req.body.text,
+          blogPost: req.params.id,
+        });
+        const insertedComment = await newComment.save();
+        res.json(insertedComment);
+      } catch (error) {
+        res.status(400).json({ message: error });
+      }
     }
   }
 };
