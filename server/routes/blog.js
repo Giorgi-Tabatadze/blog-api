@@ -4,6 +4,14 @@ var router = express.Router();
 const validation = require("../validation/validation");
 const blogpostController = require("../controllers/blogpostController");
 const commentsController = require("../controllers/commentController");
+const authController = require("../controllers/authController");
+
+/** AUTH ROUTES */
+
+router.post("/login", authController.handleLogin);
+router.post("/register", authController.handleNewUser);
+router.get("/refresh", authController.handleRefreshToken);
+router.get("/logout", authController.handleLogout);
 
 /* POSTS ROUTES. */
 router.get(
