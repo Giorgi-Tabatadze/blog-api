@@ -14,6 +14,14 @@ exports.blogpost_get_list = [
 exports.blogpost_get_single = [
   param("id", "blogpost ID is required in parameters").escape(),
 ];
+exports.blogpost_post_insert = [
+  body("title", "title is required").isLength({ min: 1 }).escape(),
+  body("text", "text is required").trim().isLength({ min: 1 }).escape(),
+  body("published", "value of published must be a boolean")
+    .optional()
+    .isBoolean()
+    .escape(),
+];
 
 /**
  * COMMENT validation

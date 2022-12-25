@@ -1,10 +1,17 @@
 var express = require("express");
 var router = express.Router();
 
+const editorRouter = require("./editor");
 const validation = require("../validation/validation");
 const blogpostController = require("../controllers/blogpostController");
 const commentsController = require("../controllers/commentController");
 const authController = require("../controllers/authController");
+
+const verifyJwt = require("../middleware/verifyJwt");
+
+/** EDITOR ROUTE */
+
+router.use("/editor", verifyJwt, editorRouter);
 
 /** AUTH ROUTES */
 

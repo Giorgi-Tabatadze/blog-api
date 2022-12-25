@@ -6,19 +6,27 @@ const { validationResult } = require("express-validator");
  * GET List of Comment for Blogpost
  */
 
-exports.comment_get_list = async (req, res) => {
+exports.comment_get_list = async (req, res, next) => {
   let { limit = 10, page = 1 } = req.query;
 
   const limitRecords = parseInt(limit);
   const skip = (page - 1) * limit;
 
   try {
+    const blogPost = await Blogpost.findById(req.params.id);
+    if (!blogPost) {
+      return res.sendStatus(400);
+    }
+    console.log(blogPost);
+    if (!blogPost.published) {
+      return res.sendStatus(401);
+    }
     const comments = await Comment.find({ blogPost: req.params.id })
       .limit(limitRecords)
       .skip(skip);
     res.json(comments);
   } catch (error) {
-    res.status(400).json({ message: error });
+    return next(error);
   }
 };
 /**
@@ -30,12 +38,15 @@ exports.comment_post_insert = async (req, res) => {
   if (!errors.isEmpty()) {
     res.status(400).json({ message: errors });
   } else {
-    const blogpostExists = await Blogpost.exists({ _id: req.params.id });
-    if (!blogpostExists) {
+    const blogPost = await Blogpost.findById(req.params.id);
+    if (!blogPost) {
       res
         .status(400)
         .json({ message: "Invalid Blogpost ID provided in Parameters" });
     } else {
+      if (!blogPost.published) {
+        return res.sendStatus(401);
+      }
       try {
         const newComment = new Comment({
           authorName: req.body.authorName,
