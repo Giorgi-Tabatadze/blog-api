@@ -75,6 +75,27 @@ exports.editor_comment_remove_delete = async (req, res, next) => {
     return next(error);
   }
 };
+exports.editor_comment_edit_put = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors });
+  }
+  const commentId = req.params.commentid;
+  const updateComment = {
+    authorName: req.body.authorName,
+    text: req.body.text,
+  };
+  try {
+    const result = await Comment.findOneAndUpdate(
+      { _id: commentId },
+      updateComment,
+      { new: true },
+    );
+    res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
 
 // async function insertComments() {
 //   try {

@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 
 const editorRouter = require("./editor");
-const validation = require("../validation/validation");
+const validation = require("../middleware/validation");
 const blogpostController = require("../controllers/blogpostController");
 const commentsController = require("../controllers/commentController");
 const authController = require("../controllers/authController");
