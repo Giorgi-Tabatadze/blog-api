@@ -62,6 +62,20 @@ exports.comment_post_insert = async (req, res) => {
   }
 };
 
+exports.editor_comment_remove_delete = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors });
+  }
+  const commentId = req.params.commentid;
+  try {
+    const commentToDelete = await Comment.deleteOne({ _id: commentId });
+    res.json(commentToDelete);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // async function insertComments() {
 //   try {
 //     const commentToInsert = new Comment({

@@ -31,6 +31,11 @@ exports.comment_get_list = [
     .isLength({ min: 1 })
     .escape(),
 ];
+exports.comment_delete_remove = [
+  param("commentid", "Comment ID is required in parameters")
+    .isLength({ min: 1 })
+    .escape(),
+];
 
 exports.comment_post_insert = [
   param("id", "blogpost ID is required in parameters")

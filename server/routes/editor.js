@@ -5,6 +5,7 @@ const validation = require("../validation/validation");
 const blogpostController = require("../controllers/blogpostController");
 const commentsController = require("../controllers/commentController");
 
+/** BLOGPOST ROUTES */
 router.get(
   "/blogposts",
   validation.blogpost_get_list,
@@ -29,6 +30,14 @@ router.delete(
   "/blogposts/:id",
   validation.blogpost_get_single,
   blogpostController.editor_blogpost_remove_delete,
+);
+
+/** COMMENT ROUTES */
+
+router.delete(
+  "/blogposts/:id/comments/:commentid",
+  validation.comment_delete_remove,
+  commentsController.editor_comment_remove_delete,
 );
 
 module.exports = router;
