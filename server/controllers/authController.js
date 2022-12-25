@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const { cookie } = require("express-validator");
 
 const handleLogin = async (req, res, next) => {
+  const cookies = req.cookies;
   const { user, pwd } = req.body;
   if (!user || !pwd)
     return res
@@ -23,20 +24,35 @@ const handleLogin = async (req, res, next) => {
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "30s" },
     );
-    const refreshToken = jwt.sign(
+    const newRefreshToken = jwt.sign(
       { username: foundUser.username },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "1d" },
     );
 
+    let newRefreshTokenArray = !cookies?.jwt
+      ? foundUser.refreshToken
+      : foundUser.refreshToken.filter((rt) => rt !== cookies.jwt);
+
+    if (cookies?.jwt) {
+      const refreshToken = cookies.jwt;
+      const foundToken = await User.findOne({ refreshToken });
+
+      if (!foundToken) {
+        newRefreshTokenArray = [];
+      }
+
+      res.clearCookie("jwt", { httpOnly: true });
+    }
+
     // Saving refreshToken with current user
-    foundUser.refreshToken = refreshToken;
+    foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken];
     try {
       await foundUser.save();
     } catch (error) {
       return next(error);
     }
-    res.cookie("jwt", refreshToken, {
+    res.cookie("jwt", newRefreshToken, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
     });
@@ -80,23 +96,69 @@ const handleNewUser = async (req, res, next) => {
 
 const handleRefreshToken = async (req, res, next) => {
   const cookies = req.cookies;
-  console.log(cookies);
   if (!cookies?.jwt) return res.sendStatus(401);
-  console.log(cookies.jwt);
   const refreshToken = cookies.jwt;
-  const foundUser = await User.findOne({ refreshToken: refreshToken });
-  if (!foundUser) return res.sendStatus(403); //Forbidden
+  res.clearCookie("jwt", { httpOnly: true });
 
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-    if (err || foundUser.username !== decoded.username)
-      return res.sendStatus(403);
-    const accessToken = jwt.sign(
-      { username: foundUser.username },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "30s" },
+  const foundUser = await User.findOne({ refreshToken: refreshToken });
+
+  // Detected refresh token reuse!
+  if (!foundUser) {
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+      async (err, decoded) => {
+        if (err) return res.sendStatus(403);
+        const hackedUser = await User.findOne({ username: decoded.username });
+        hackedUser.refreshToken = [];
+        const result = await hackedUser.save();
+        console.log(result);
+      },
     );
-    res.json({ accessToken });
-  });
+    return res.sendStatus(403);
+  } //Forbidden
+
+  const newRefreshTokenArray = foundUser.refreshToken.filter(
+    (rt) => rt !== refreshToken,
+  );
+
+  jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+    async (err, decoded) => {
+      if (err) {
+        foundUser.refreshToken = [...newRefreshTokenArray];
+        const result = await foundUser.save();
+      }
+      if (err || foundUser.username !== decoded.username)
+        return res.sendStatus(403);
+
+      // Refresh token was still valid
+      const accessToken = jwt.sign(
+        { username: foundUser.username },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "30s" },
+      );
+      const newRefreshToken = jwt.sign(
+        { username: foundUser.username },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: "1d" },
+      );
+
+      // Saving refreshToken with current user
+      foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken];
+      try {
+        await foundUser.save();
+      } catch (error) {
+        return next(error);
+      }
+      res.cookie("jwt", newRefreshToken, {
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+      res.json({ accessToken });
+    },
+  );
 };
 
 const handleLogout = async (req, res) => {
@@ -113,7 +175,9 @@ const handleLogout = async (req, res) => {
     return res.sendStatus(204);
   }
 
-  foundUser.refreshToken = "";
+  foundUser.refreshToken = foundUser.refreshToken.filter(
+    (rt) => rt !== refreshToken,
+  );
   try {
     await foundUser.save();
   } catch (error) {
